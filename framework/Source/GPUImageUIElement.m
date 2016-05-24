@@ -21,12 +21,12 @@
 {
     if (!(self = [super init]))
     {
-		return nil;
+        return nil;
     }
     
     view = inputView;
     layer = inputView.layer;
-
+    
     previousLayerSizeInPixels = CGSizeZero;
     [self update];
     
@@ -37,15 +37,15 @@
 {
     if (!(self = [super init]))
     {
-		return nil;
+        return nil;
     }
     
     view = nil;
     layer = inputLayer;
-
+    
     previousLayerSizeInPixels = CGSizeZero;
     [self update];
-
+    
     return self;
 }
 
@@ -74,7 +74,7 @@
         time = CMTimeAdd(time, CMTimeMakeWithSeconds(diff, 600));
         actualTimeOfLastUpdate = now;
     }
-
+    
     [self updateWithTimestamp:time];
 }
 
@@ -86,10 +86,10 @@
     
     GLubyte *imageData = (GLubyte *) calloc(1, (int)layerPixelSize.width * (int)layerPixelSize.height * 4);
     
-    CGColorSpaceRef genericRGBColorspace = CGColorSpaceCreateDeviceRGB();    
+    CGColorSpaceRef genericRGBColorspace = CGColorSpaceCreateDeviceRGB();
     CGContextRef imageContext = CGBitmapContextCreate(imageData, (int)layerPixelSize.width, (int)layerPixelSize.height, 8, (int)layerPixelSize.width * 4, genericRGBColorspace,  kCGBitmapByteOrder32Little | kCGImageAlphaPremultipliedFirst);
-//    CGContextRotateCTM(imageContext, M_PI_2);
-	CGContextTranslateCTM(imageContext, 0.0f, layerPixelSize.height);
+    //    CGContextRotateCTM(imageContext, M_PI_2);
+    CGContextTranslateCTM(imageContext, 0.0f, layerPixelSize.height);
     CGContextScaleCTM(imageContext, layer.contentsScale, -layer.contentsScale);
     //        CGContextSetBlendMode(imageContext, kCGBlendModeCopy); // From Technical Q&A QA1708: http://developer.apple.com/library/ios/#qa/qa1708/_index.html
     
@@ -100,7 +100,8 @@
     
     // TODO: This may not work
     outputFramebuffer = [[GPUImageContext sharedFramebufferCache] fetchFramebufferForSize:layerPixelSize textureOptions:self.outputTextureOptions onlyTexture:YES];
-
+    [outputFramebuffer disableReferenceCounting]; // ADDED: https://github.com/BradLarson/GPUImage/issues/2211
+    
     glBindTexture(GL_TEXTURE_2D, [outputFramebuffer texture]);
     // no need to use self.outputTextureOptions here, we always need these texture options
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)layerPixelSize.width, (int)layerPixelSize.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, imageData);
@@ -115,6 +116,7 @@
             NSInteger textureIndexOfTarget = [[targetTextureIndices objectAtIndex:indexOfObject] integerValue];
             
             [currentTarget setInputSize:layerPixelSize atIndex:textureIndexOfTarget];
+            [currentTarget setInputFramebuffer:outputFramebuffer atIndex:textureIndexOfTarget]; // ADDED: https://github.com/BradLarson/GPUImage/issues/2211
             [currentTarget newFrameReadyAtTime:frameTime atIndex:textureIndexOfTarget];
         }
     }    
